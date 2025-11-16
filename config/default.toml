@@ -1,0 +1,187 @@
+[communication]
+protocol = "mock"
+serial_port = "/dev/ttyUSB0"
+baud_rate = 115200
+i2c_address = 64
+
+[[fingers]]
+name = "Thumb"
+[[fingers.joints]]
+name = "CMC"
+motor_type = "pwmservo"
+channel = 0
+min_angle = 0.0
+max_angle = 90.0
+offset = 0.0
+min_pulse = 500
+max_pulse = 2500
+
+[[fingers.joints]]
+name = "MCP"
+motor_type = "pwmservo"
+channel = 1
+min_angle = 0.0
+max_angle = 90.0
+offset = 0.0
+min_pulse = 500
+max_pulse = 2500
+
+[[fingers.joints]]
+name = "IP"
+motor_type = "pwmservo"
+channel = 2
+min_angle = 0.0
+max_angle = 90.0
+offset = 0.0
+min_pulse = 500
+max_pulse = 2500
+
+[[fingers]]
+name = "Index"
+[[fingers.joints]]
+name = "MCP"
+motor_type = "pwmservo"
+channel = 3
+min_angle = 0.0
+max_angle = 90.0
+offset = 0.0
+min_pulse = 500
+max_pulse = 2500
+
+[[fingers.joints]]
+name = "PIP"
+motor_type = "pwmservo"
+channel = 4
+min_angle = 0.0
+max_angle = 90.0
+offset = 0.0
+min_pulse = 500
+max_pulse = 2500
+
+[[fingers.joints]]
+name = "DIP"
+motor_type = "pwmservo"
+channel = 5
+min_angle = 0.0
+max_angle = 90.0
+offset = 0.0
+min_pulse = 500
+max_pulse = 2500
+
+[[fingers]]
+name = "Middle"
+[[fingers.joints]]
+name = "MCP"
+motor_type = "pwmservo"
+channel = 6
+min_angle = 0.0
+max_angle = 90.0
+offset = 0.0
+min_pulse = 500
+max_pulse = 2500
+
+[[fingers.joints]]
+name = "PIP"
+motor_type = "pwmservo"
+channel = 7
+min_angle = 0.0
+max_angle = 90.0
+offset = 0.0
+min_pulse = 500
+max_pulse = 2500
+
+[[fingers.joints]]
+name = "DIP"
+motor_type = "pwmservo"
+channel = 8
+min_angle = 0.0
+max_angle = 90.0
+offset = 0.0
+min_pulse = 500
+max_pulse = 2500
+
+[[fingers]]
+name = "Ring"
+[[fingers.joints]]
+name = "MCP"
+motor_type = "pwmservo"
+channel = 9
+min_angle = 0.0
+max_angle = 90.0
+offset = 0.0
+min_pulse = 500
+max_pulse = 2500
+
+[[fingers.joints]]
+name = "PIP"
+motor_type = "pwmservo"
+channel = 10
+min_angle = 0.0
+max_angle = 90.0
+offset = 0.0
+min_pulse = 500
+max_pulse = 2500
+
+[[fingers.joints]]
+name = "DIP"
+motor_type = "pwmservo"
+channel = 11
+min_angle = 0.0
+max_angle = 90.0
+offset = 0.0
+min_pulse = 500
+max_pulse = 2500
+
+[[fingers]]
+name = "Pinky"
+[[fingers.joints]]
+name = "MCP"
+motor_type = "pwmservo"
+channel = 12
+min_angle = 0.0
+max_angle = 90.0
+offset = 0.0
+min_pulse = 500
+max_pulse = 2500
+
+[[fingers.joints]]
+name = "PIP"
+motor_type = "pwmservo"
+channel = 13
+min_angle = 0.0
+max_angle = 90.0
+offset = 0.0
+min_pulse = 500
+max_pulse = 2500
+
+[[fingers.joints]]
+name = "DIP"
+motor_type = "pwmservo"
+channel = 14
+min_angle = 0.0
+max_angle = 90.0
+offset = 0.0
+min_pulse = 500
+max_pulse = 2500
+
+[wrist]
+[wrist.pitch]
+name = "Pitch"
+motor_type = "pwmservo"
+channel = 15
+min_angle = -45.0
+max_angle = 45.0
+offset = 0.0
+min_pulse = 500
+max_pulse = 2500
+
+[wrist.roll]
+name = "Roll"
+motor_type = "pwmservo"
+channel = 16
+min_angle = -45.0
+max_angle = 45.0
+offset = 0.0
+min_pulse = 500
+max_pulse = 2500
+
