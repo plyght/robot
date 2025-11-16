@@ -21,5 +21,10 @@ serial = ["dep:serialport"]
 linux-pwm = ["dep:linux-embedded-hal"]
 embedded = ["dep:embedded-hal"]
 raspberry-pi = ["dep:rppal", "linux-pwm"]
+opencv = []
+
+[[bin]]
+name = "vision_control"
+path = "src/bin/vision_control.rs"
 
 [dev-dependencies]

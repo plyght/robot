@@ -3,67 +3,42 @@
 ## Prerequisites
 
 - Rust 1.70 or later
-- Basic understanding of robotics terminology
-
-## Installation
-
-Clone or add to your project:
-
-```bash
-cargo init --lib
-# Add robot-hand dependency to Cargo.toml
-```
+- Understanding of basic robotics concepts
 
 ## Verification
 
-Run the test suite to verify installation:
+Verify installation:
 
 ```bash
 cargo test
-```
-
-Expected output:
-```
-test result: ok. 7 passed; 0 failed; 0 ignored
-```
-
-## First Example
-
-Run the basic control example with mock hardware:
-
-```bash
 cargo run --example basic_control
 ```
 
-This demonstrates finger movement, wrist control, and basic operations without requiring physical hardware.
+The basic control example demonstrates finger and wrist movement using mock hardware.
 
 ## Hardware Configuration
 
-When your robotic hand arrives, follow these steps:
+### Communication Protocol
 
-### 1. Identify Communication Protocol
-
-Determine how your hand connects:
-
-- USB/Serial: Most common, cross-platform
+Identify your connection method:
+- USB/Serial: Cross-platform, most common
 - I2C: Direct bus communication
-- PWM: Direct pin control (embedded/Raspberry Pi)
+- PWM: Pin control (embedded/Raspberry Pi)
 
-### 2. Create Configuration File
+### Configuration File
 
-Copy and modify `config/default.toml`:
+Create or modify `config/default.toml`:
 
 ```toml
 [communication]
 protocol = "serial"
-serial_port = "/dev/ttyUSB0"  # Linux/macOS
-# serial_port = "COM3"        # Windows
+serial_port = "/dev/ttyUSB0"
 baud_rate = 115200
 ```
 
-### 3. Map Hardware Channels
+### Hardware Mapping
 
-Define each finger and joint:
+Define fingers and joints:
 
 ```toml
 [[fingers]]
@@ -80,21 +55,14 @@ min_pulse = 500
 max_pulse = 2500
 ```
 
-Adjust parameters based on your hardware specifications.
-
-### 4. Test Configuration
-
-Build with appropriate features:
+### Build
 
 ```bash
-# For serial/USB connection
 cargo build --features serial
-
-# For mock testing
 cargo build --features mock
 ```
 
-### 5. Initial Hardware Test
+### Initial Test
 
 Create a minimal test program:
 
@@ -120,112 +88,74 @@ fn main() -> robot_hand::Result<()> {
 }
 ```
 
-Run with:
 ```bash
 cargo run --features serial
 ```
 
 ## Calibration
 
-Adjust configuration values based on physical testing:
-
 ### Angle Limits
-
-Test minimum and maximum positions manually, then update `min_angle` and `max_angle` in configuration.
+Test physical range, then update `min_angle` and `max_angle`.
 
 ### Offsets
+Adjust `offset` parameter if joints misalign at zero.
 
-If joints don't align at zero position, adjust the `offset` parameter.
-
-### Pulse Widths (PWM Servos)
-
-Tune `min_pulse` and `max_pulse` for full range of motion:
-
-- Start with conservative values (500-2500)
-- Gradually adjust based on actual servo response
-- Stay within servo specifications
+### PWM Pulse Widths
+Start with 500-2500, tune based on servo response within specifications.
 
 ## Common Issues
 
-### Permission Denied (Serial Port)
-
-Linux/macOS:
+### Serial Port Permission
 ```bash
 sudo chmod 666 /dev/ttyUSB0
-# Or add user to dialout group
 sudo usermod -a -G dialout $USER
 ```
 
-### Compilation Errors
-
-Ensure feature flags match your platform:
-
-- Development: `--features mock`
-- Serial hardware: `--features serial`
-- Raspberry Pi: `--features raspberry-pi` (Linux only)
+### Compilation
+Verify feature flags match your platform and hardware.
 
 ### Unexpected Movement
-
 - Verify channel mappings
 - Check angle limits
-- Confirm motor type configuration
-- Review calibration offsets
+- Confirm motor type
+- Review offsets
 
 ## Next Steps
 
-Once basic control is working:
-
-1. Test all fingers and joints individually
-2. Implement application-specific control logic
+1. Test all joints individually
+2. Implement application logic
 3. Add sensor feedback (see [Extending](extending.md))
 4. Optimize motion parameters
 
 ## Development Workflow
 
-### Without Hardware
-
+Without hardware:
 ```bash
 cargo test
 cargo run --example basic_control --features mock
 ```
 
-### With Hardware
-
+With hardware:
 ```bash
 cargo build --features serial
 cargo run --example basic_control --features serial
 ```
 
-### Cross-Platform
-
-Develop on any platform, deploy on target:
-
+Cross-platform:
 ```bash
-# Development on macOS/Windows
 cargo build --features mock
-
-# Deploy to Linux/Raspberry Pi
 cargo build --target armv7-unknown-linux-gnueabihf --features serial
 ```
 
-## Platform-Specific Notes
+## Platform Notes
 
-### Linux
-
-All features supported. May require permissions for hardware access.
-
-### Raspberry Pi
-
-Full GPIO support with `raspberry-pi` feature. Requires Linux kernel headers.
-
-### macOS/Windows
-
-Use `mock` or `serial` features. Platform-specific GPIO features unavailable.
+- Linux: All features supported, may require permissions
+- Raspberry Pi: Full GPIO with `raspberry-pi` feature
+- macOS/Windows: Mock and serial only
 
 ## Configuration Examples
 
-### Single Joint Per Finger
-
+Single joint:
 ```toml
 [[fingers]]
 name = "Index"
@@ -239,7 +169,7 @@ max_angle = 90.0
 offset = 0.0
 ```
 
-### Multiple Joints Per Finger
+Multiple joints:
 
 ```toml
 [[fingers]]
@@ -270,8 +200,7 @@ max_angle = 90.0
 offset = 0.0
 ```
 
-### Stepper Motors
-
+Stepper motors:
 ```toml
 [[fingers.joints]]
 name = "Base"
@@ -282,7 +211,7 @@ max_angle = 180.0
 offset = 0.0
 ```
 
-### I2C Communication
+I2C communication:
 
 ```toml
 [communication]
@@ -290,38 +219,31 @@ protocol = "i2c"
 i2c_address = 64  # 0x40 in hex
 ```
 
-## API Usage Patterns
+## API Usage
 
-### Basic Movement
-
+Basic movement:
 ```rust
 hand.move_finger(finger_id, &[angle1, angle2, angle3])?;
 ```
 
-### Synchronized Movement
-
+Synchronized movement:
 ```rust
 hand.open_hand()?;
 std::thread::sleep(Duration::from_secs(1));
 hand.close_hand()?;
 ```
 
-### Grasp Control
-
+Grasp control:
 ```rust
-// Parameter is object size in mm
-hand.grasp(30.0)?;  // Small object
-hand.grasp(60.0)?;  // Large object
+hand.grasp(30.0)?;
 ```
 
-### Wrist Control
-
+Wrist control:
 ```rust
-// [pitch, roll, yaw] in degrees
 hand.move_wrist([10.0, 0.0, -5.0])?;
 ```
 
-### Motion Planning
+Motion planning:
 
 ```rust
 use robot_hand::MotionPlanner;

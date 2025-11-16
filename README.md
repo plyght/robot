@@ -1,15 +1,15 @@
 # Robot Hand Control Library
 
-A universal Rust library for controlling robotic hands with flexible hardware abstraction supporting multiple motor types and communication protocols.
+Universal Rust library for controlling robotic hands with flexible hardware abstraction supporting multiple motor types and communication protocols.
 
 ## Features
 
-- Hardware-agnostic design with trait-based abstractions
-- Support for PWM servos, stepper motors, and DC motors
-- Multiple communication protocols (Serial, I2C, PWM)
-- TOML-based configuration system
-- Cross-platform development with mock hardware
-- Zero-cost abstractions with compile-time optimization
+- Hardware-agnostic trait-based architecture
+- PWM servos, stepper motors, and DC motor support
+- Serial, I2C, and PWM communication protocols
+- TOML configuration system
+- Vision and EMG integration for autonomous object manipulation
+- Mock hardware support for cross-platform development
 
 ## Quick Start
 
@@ -83,23 +83,22 @@ offset = 0.0
 
 ## Architecture
 
-The library is organized into modular layers:
+Modular layer design:
 
-- **Hardware Layer**: Motor and communication abstractions
+- **Hardware**: Motor and communication abstractions
 - **Hand Model**: Finger, wrist, and joint structures
-- **Configuration**: TOML-based runtime configuration
-- **Control**: High-level API for hand control
-- **Platform**: Platform-specific driver implementations
+- **Control**: High-level control API and motion planning
+- **Vision/EMG**: Object detection and muscle signal integration
+- **Protocol**: Text-based serial and hardware communication
+- **Platform**: Platform-specific implementations
 
-## Features
-
-Enable optional features as needed:
+## Cargo Features
 
 - `mock` (default): Virtual hardware for testing
 - `serial`: USB/Serial communication
 - `linux-pwm`: Linux PWM interface
 - `embedded`: Embedded HAL support
-- `raspberry-pi`: Raspberry Pi GPIO support (Linux only)
+- `raspberry-pi`: Raspberry Pi GPIO (Linux only)
 
 ## Platform Support
 
@@ -142,23 +141,24 @@ config.to_file(path) -> Result<()>
 
 ## Examples
 
-See `examples/` directory:
-
-- `basic_control.rs`: Simple finger and wrist movement
-- `grasp_patterns.rs`: Predefined grasp demonstrations
-- `config_example.rs`: Configuration file manipulation
+- `basic_control.rs`: Finger and wrist movement
+- `grasp_patterns.rs`: Predefined grasp patterns
+- `config_example.rs`: Configuration file usage
+- `vision_emg_demo.rs`: Autonomous object manipulation
 
 ## Documentation
 
-- [Getting Started](docs/getting-started.md): Initial setup and first steps
-- [Extending](docs/extending.md): Adding custom motors and protocols
+- [Getting Started](docs/getting-started.md): Installation and configuration
+- [Vision+EMG Integration](docs/vision-emg-integration.md): Autonomous object pickup
+- [Extending](docs/extending.md): Custom motors and protocols
 
 ## Testing
 
 ```bash
-cargo test                    # Run all tests
-cargo build --all-targets     # Build library and examples
-cargo run --example <name>    # Run specific example
+cargo test
+cargo build --all-targets
+cargo run --example basic_control
+cargo run --bin vision_control
 ```
 
 ## License

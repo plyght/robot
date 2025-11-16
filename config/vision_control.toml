@@ -1,0 +1,55 @@
+[camera]
+device_id = 0
+width = 640
+height = 480
+fps = 30
+
+[emg]
+serial_port = "/dev/ttyUSB0"
+baud_rate = 9600
+threshold = 600
+debounce_ms = 200
+
+[servo]
+serial_port = "/dev/ttyUSB1"
+baud_rate = 115200
+
+[vision]
+confidence_threshold = 0.5
+model_path = "models/yolov5s.onnx"
+
+[control]
+camera_poll_interval_ms = 100
+emg_poll_interval_ms = 10
+
+[[grip_patterns]]
+object_type = "cup"
+pattern = "power_grasp"
+
+[[grip_patterns]]
+object_type = "phone"
+pattern = "precision_grip"
+
+[[grip_patterns]]
+object_type = "bottle"
+pattern = "power_grasp"
+
+[[grip_patterns]]
+object_type = "pen"
+pattern = "pinch_grip"
+
+[[grip_patterns]]
+object_type = "card"
+pattern = "lateral_grip"
+
+[[grip_patterns]]
+object_type = "small_object"
+pattern = "power_grasp"
+
+[finger_servo_mapping]
+Thumb = 0
+Index = 1
+Middle = 2
+Ring = 3
+Pinky = 4
+

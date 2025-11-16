@@ -447,11 +447,11 @@ mod tests {
 
 ## Best Practices
 
-1. Always implement proper error handling
-2. Validate inputs before hardware operations
-3. Test with mock implementations first
-4. Document hardware-specific requirements
-5. Use feature flags for optional dependencies
-6. Maintain backward compatibility in public APIs
-7. Add comprehensive tests for new functionality
+- Implement proper error handling
+- Validate inputs before hardware operations
+- Test with mock implementations before hardware
+- Document hardware requirements and limitations
+- Use feature flags for optional dependencies
+- Maintain backward compatibility in public APIs
+- Add comprehensive unit tests
 
