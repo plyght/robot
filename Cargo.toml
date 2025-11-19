@@ -13,6 +13,9 @@ serialport = { version = "4.3", optional = true }
 embedded-hal = { version = "1.0", optional = true }
 linux-embedded-hal = { version = "0.4", optional = true }
 rppal = { version = "0.18", optional = true }
+opencv = { version = "0.97", optional = true, default-features = false, features = ["videoio", "highgui", "imgproc"] }
+ort = { version = "2.0.0-rc.10", optional = true }
+ndarray = { version = "0.16", optional = true }
 
 [features]
 default = ["mock"]
@@ -21,7 +24,7 @@ serial = ["dep:serialport"]
 linux-pwm = ["dep:linux-embedded-hal"]
 embedded = ["dep:embedded-hal"]
 raspberry-pi = ["dep:rppal", "linux-pwm"]
-opencv = []
+opencv = ["dep:opencv", "dep:ort", "dep:ndarray"]
 
 [[bin]]
 name = "vision_control"
@@ -30,5 +33,9 @@ path = "src/bin/vision_control.rs"
 [[bin]]
 name = "simple_control"
 path = "src/bin/simple_control.rs"
+
+[[bin]]
+name = "camera_test"
+path = "src/bin/camera_test.rs"
 
 [dev-dependencies]

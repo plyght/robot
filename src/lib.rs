@@ -19,3 +19,6 @@ pub use hardware::{DcMotor, I2cController, Motor, MotorController, PwmServo, Ste
 pub use platform::{I2cPlatformController, LinuxPwmController, MockController};
 pub use protocol::{ServoProtocol, TextSerialController, MockSerialController};
 pub use vision::{DetectedObject, BoundingBox, GripPattern, GripPatternType, MockObjectDetector, ObjectDetector, classify_object_type, select_best_object};
+
+#[cfg(feature = "opencv")]
+pub use vision::OpenCVDetector;

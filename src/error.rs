@@ -5,6 +5,9 @@ pub enum HandError {
     #[error("Hardware communication error: {0}")]
     Communication(String),
 
+    #[error("Hardware error: {0}")]
+    Hardware(String),
+
     #[error("Invalid joint angle: {angle} (joint {joint_id}, limits: {min}..{max})")]
     InvalidJointAngle {
         joint_id: usize,
