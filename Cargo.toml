@@ -27,4 +27,8 @@ opencv = []
 name = "vision_control"
 path = "src/bin/vision_control.rs"
 
+[[bin]]
+name = "simple_control"
+path = "src/bin/simple_control.rs"
+
 [dev-dependencies]

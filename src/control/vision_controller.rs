@@ -29,7 +29,7 @@ pub struct VisionController<D: ObjectDetector, P: ServoProtocol> {
     protocol: P,
     config: VisionControllerConfig,
     current_sequence: Option<PickupSequence>,
-    running: bool,
+    pub running: bool,
 }
 
 impl<D: ObjectDetector, P: ServoProtocol> VisionController<D, P> {
@@ -130,6 +130,79 @@ impl<D: ObjectDetector, P: ServoProtocol> VisionController<D, P> {
     pub fn inject_emg_trigger(&mut self, value: u16) -> Result<()> {
         self.emg_reader.inject_value(value)?;
         Ok(())
+    }
+
+    pub fn run_step(&mut self) -> Result<bool> {
+        if let Some(ref mut sequence) = self.current_sequence {
+            if self.emg_reader.get_state() == EmgState::Executing {
+                let complete =
+                    sequence.execute_step_by_step(&mut self.protocol, &self.config.finger_to_servo_map)?;
+
+                if complete {
+                    println!("\n✓ Pickup sequence completed!\n");
+                    self.current_sequence = None;
+                    self.emg_reader.set_state(EmgState::Idle);
+                    println!("Ready for next trigger...\n");
+                }
+                return Ok(true);
+            }
+        }
+
+        let current_state = self.emg_reader.get_state();
+        
+        if current_state == EmgState::Triggered {
+            println!("\n🔔 Manual trigger activated!");
+            self.emg_reader.set_state(EmgState::Executing);
+        } else if self.emg_reader.poll()? {
+            println!("\n🔔 EMG threshold triggered!");
+            self.emg_reader.set_state(EmgState::Executing);
+        } else {
+            return Ok(self.running);
+        }
+        
+        if self.emg_reader.get_state() != EmgState::Executing {
+            return Ok(self.running);
+        }
+
+        let objects = self.detector.detect_objects()?;
+        println!("   Detected {} objects", objects.len());
+
+        if objects.is_empty() {
+            println!("   ⚠ No objects detected, returning to idle\n");
+            self.emg_reader.set_state(EmgState::Idle);
+            return Ok(true);
+        }
+
+        for (idx, obj) in objects.iter().enumerate() {
+            println!(
+                "   {}. {} (confidence: {:.1}%)",
+                idx + 1,
+                obj.label,
+                obj.confidence * 100.0
+            );
+        }
+
+        let (frame_width, frame_height) = self.detector.get_frame_size();
+        let frame_center = (frame_width / 2, frame_height / 2);
+
+        if let Some(selected_obj) = select_best_object(&objects, frame_center) {
+            println!("\n   → Selected: {}", selected_obj.label);
+
+            let object_type = classify_object_type(&selected_obj.label)
+                .unwrap_or("small_object");
+            println!("   → Classified as: {}", object_type);
+
+            let grip_pattern = GripPattern::for_object_type(object_type);
+            println!("   → Using grip: {:?}\n", grip_pattern.pattern_type);
+
+            let sequence = PickupSequence::new(grip_pattern);
+            self.current_sequence = Some(sequence);
+        } else {
+            println!("   ⚠ Could not select object, returning to idle\n");
+            self.emg_reader.set_state(EmgState::Idle);
+        }
+
+        Ok(self.running)
     }
 }
 
