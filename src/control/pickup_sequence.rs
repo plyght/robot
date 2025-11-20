@@ -143,4 +143,3 @@ pub fn create_default_finger_servo_map() -> std::collections::HashMap<String, u8
     map.insert("Pinky".to_string(), 4);
     map
 }
-

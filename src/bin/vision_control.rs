@@ -1,6 +1,6 @@
 use robot_hand::{
     create_default_finger_servo_map, BoundingBox, DetectedObject, EmgReader, MockObjectDetector,
-    MockSerialController, Result, VisionController, VisionControllerConfig,
+    Result, VisionController, VisionControllerConfig,
 };
 use std::sync::{Arc, Mutex};
 use std::thread;
@@ -35,7 +35,7 @@ fn main() -> Result<()> {
             io::stdin().read_line(&mut servo_port)?;
             servo_port.trim().to_string()
         };
-        
+
         let emg_port = if args.len() > 2 && args[2] != "mock" {
             println!("Using EMG port from argument: {}", args[2]);
             Some(args[2].clone())
@@ -43,13 +43,13 @@ fn main() -> Result<()> {
             println!("No EMG port provided, using mock EMG reader");
             None
         };
-        
+
         let emg_reader = if let Some(port) = emg_port {
             EmgReader::new(&port, 9600, 600)?
         } else {
             EmgReader::new("mock", 9600, 600)?
         };
-        
+
         let protocol = robot_hand::TextSerialController::new(&servo_port, 115200)?;
         (emg_reader, protocol)
     };
@@ -58,10 +58,7 @@ fn main() -> Result<()> {
     let emg_reader = EmgReader::new("mock", 9600, 600)?;
 
     #[cfg(not(feature = "serial"))]
-    let protocol = MockSerialController::new();
-
-    #[cfg(not(feature = "serial"))]
-    let protocol = MockSerialController::new();
+    let protocol = robot_hand::MockSerialController::new();
 
     let config = VisionControllerConfig {
         camera_poll_interval: Duration::from_millis(100),
@@ -97,27 +94,27 @@ fn main() -> Result<()> {
     {
         let args: Vec<String> = std::env::args().collect();
         let manual_mode = args.len() > 2 && args[2] == "mock";
-        
+
         println!("\n==============================================");
         println!("  LIVE MODE (Hardware Connected)");
         println!("==============================================\n");
-        
+
         if manual_mode {
             println!("Manual Control Mode Active");
             println!("Commands:");
             println!("  't' or Enter - Trigger pickup sequence");
             println!("  'q' - Quit");
             println!("Press Ctrl+C to stop.\n");
-            
+
             let controller = Arc::new(Mutex::new(controller));
             let controller_clone = Arc::clone(&controller);
-            
+
             let controller_handle = thread::spawn(move || {
                 let mut ctrl = controller_clone.lock().unwrap();
                 ctrl.running = true;
                 println!("Vision + EMG Control System Started");
                 println!("Threshold: {} | Waiting for trigger...\n", 600);
-                
+
                 while ctrl.running {
                     if let Err(e) = ctrl.run_step() {
                         eprintln!("Controller error: {}", e);
@@ -129,7 +126,7 @@ fn main() -> Result<()> {
                     thread::sleep(Duration::from_millis(10));
                 }
             });
-            
+
             loop {
                 let mut input = String::new();
                 if std::io::stdin().read_line(&mut input).is_ok() {
@@ -155,7 +152,7 @@ fn main() -> Result<()> {
                     }
                 }
             }
-            
+
             controller_handle.join().ok();
         } else {
             println!("System ready. Waiting for EMG trigger...");
@@ -208,4 +205,3 @@ fn create_mock_detector() -> MockObjectDetector {
 
     detector
 }
-

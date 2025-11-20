@@ -123,4 +123,3 @@ pub fn get_object_grip_mapping() -> HashMap<&'static str, GripPatternType> {
     mapping.insert("small_object", GripPatternType::PowerGrasp);
     mapping
 }
-

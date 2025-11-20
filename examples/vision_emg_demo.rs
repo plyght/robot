@@ -37,7 +37,10 @@ fn demo_grip_patterns() -> Result<()> {
         println!("  {} → {:?}", object_type, pattern.pattern_type);
         println!("    Approach distance: {:.1}cm", pattern.approach_distance);
         if let Some(wrist) = pattern.wrist_orientation {
-            println!("    Wrist: [{:.1}, {:.1}, {:.1}]", wrist[0], wrist[1], wrist[2]);
+            println!(
+                "    Wrist: [{:.1}, {:.1}, {:.1}]",
+                wrist[0], wrist[1], wrist[2]
+            );
         }
     }
 
@@ -69,7 +72,7 @@ fn demo_vision_controller() -> Result<()> {
     println!("-------------------------------------");
 
     let mut detector = MockObjectDetector::new(640, 480);
-    
+
     detector.add_mock_object(DetectedObject {
         label: "cup".to_string(),
         confidence: 0.92,
@@ -104,7 +107,7 @@ fn demo_vision_controller() -> Result<()> {
     controller.inject_emg_trigger(650)?;
 
     println!("  Running control loop for one cycle...\n");
-    
+
     let handle = thread::spawn(move || {
         thread::sleep(Duration::from_secs(8));
         controller.stop();
@@ -118,7 +121,3 @@ fn demo_vision_controller() -> Result<()> {
 
     Ok(())
 }
-
-
-
-

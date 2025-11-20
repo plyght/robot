@@ -57,8 +57,10 @@ impl<D: ObjectDetector, P: ServoProtocol> VisionController<D, P> {
         while self.running {
             if let Some(ref mut sequence) = self.current_sequence {
                 if self.emg_reader.get_state() == EmgState::Executing {
-                    let complete =
-                        sequence.execute_step_by_step(&mut self.protocol, &self.config.finger_to_servo_map)?;
+                    let complete = sequence.execute_step_by_step(
+                        &mut self.protocol,
+                        &self.config.finger_to_servo_map,
+                    )?;
 
                     if complete {
                         println!("\n✓ Pickup sequence completed!\n");
@@ -101,8 +103,8 @@ impl<D: ObjectDetector, P: ServoProtocol> VisionController<D, P> {
                 if let Some(selected_obj) = select_best_object(&objects, frame_center) {
                     println!("\n   → Selected: {}", selected_obj.label);
 
-                    let object_type = classify_object_type(&selected_obj.label)
-                        .unwrap_or("small_object");
+                    let object_type =
+                        classify_object_type(&selected_obj.label).unwrap_or("small_object");
                     println!("   → Classified as: {}", object_type);
 
                     let grip_pattern = GripPattern::for_object_type(object_type);
@@ -135,8 +137,8 @@ impl<D: ObjectDetector, P: ServoProtocol> VisionController<D, P> {
     pub fn run_step(&mut self) -> Result<bool> {
         if let Some(ref mut sequence) = self.current_sequence {
             if self.emg_reader.get_state() == EmgState::Executing {
-                let complete =
-                    sequence.execute_step_by_step(&mut self.protocol, &self.config.finger_to_servo_map)?;
+                let complete = sequence
+                    .execute_step_by_step(&mut self.protocol, &self.config.finger_to_servo_map)?;
 
                 if complete {
                     println!("\n✓ Pickup sequence completed!\n");
@@ -149,7 +151,7 @@ impl<D: ObjectDetector, P: ServoProtocol> VisionController<D, P> {
         }
 
         let current_state = self.emg_reader.get_state();
-        
+
         if current_state == EmgState::Triggered {
             println!("\n🔔 Manual trigger activated!");
             self.emg_reader.set_state(EmgState::Executing);
@@ -159,7 +161,7 @@ impl<D: ObjectDetector, P: ServoProtocol> VisionController<D, P> {
         } else {
             return Ok(self.running);
         }
-        
+
         if self.emg_reader.get_state() != EmgState::Executing {
             return Ok(self.running);
         }
@@ -188,8 +190,7 @@ impl<D: ObjectDetector, P: ServoProtocol> VisionController<D, P> {
         if let Some(selected_obj) = select_best_object(&objects, frame_center) {
             println!("\n   → Selected: {}", selected_obj.label);
 
-            let object_type = classify_object_type(&selected_obj.label)
-                .unwrap_or("small_object");
+            let object_type = classify_object_type(&selected_obj.label).unwrap_or("small_object");
             println!("   → Classified as: {}", object_type);
 
             let grip_pattern = GripPattern::for_object_type(object_type);
@@ -205,4 +206,3 @@ impl<D: ObjectDetector, P: ServoProtocol> VisionController<D, P> {
         Ok(self.running)
     }
 }
-

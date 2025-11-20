@@ -170,4 +170,3 @@ fn create_test_config() -> HandConfig {
         },
     }
 }
-

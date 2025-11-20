@@ -66,7 +66,7 @@ impl MotionPlanner {
         let mut profile = Vec::with_capacity(steps);
         let accel_time = self.max_speed / self.max_acceleration;
         let total_time = self.estimate_duration(&[0.0], &[distance]).as_secs_f32();
-        
+
         for i in 0..steps {
             let t = (i as f32 / (steps - 1) as f32) * total_time;
             let velocity = if t < accel_time {
@@ -78,7 +78,7 @@ impl MotionPlanner {
             };
             profile.push(velocity);
         }
-        
+
         profile
     }
 

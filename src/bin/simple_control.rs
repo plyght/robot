@@ -4,7 +4,7 @@ use robot_hand::{Result, ServoProtocol, TextSerialController};
 fn main() -> Result<()> {
     use std::io::{self, Write};
     let args: Vec<String> = std::env::args().collect();
-    
+
     if args.len() < 2 {
         eprintln!("Usage: {} <port> [command] [args...]", args[0]);
         eprintln!("\nIf no command provided, enters interactive mode (keeps port open)");
@@ -22,23 +22,26 @@ fn main() -> Result<()> {
         eprintln!("\nExamples:");
         eprintln!("  {} /dev/cu.usbmodem1101 open", args[0]);
         eprintln!("  {} /dev/cu.usbmodem1101 1 90", args[0]);
-        eprintln!("  {} /dev/cu.usbmodem1101        # Interactive mode", args[0]);
+        eprintln!(
+            "  {} /dev/cu.usbmodem1101        # Interactive mode",
+            args[0]
+        );
         std::process::exit(1);
     }
 
     let port = &args[1];
     let mut controller = TextSerialController::new(port, 9600)?;
-    
+
     // Physical finger mapping (left to right): 3, 1, 2, 4
     //   Finger 1 (leftmost) = Pinky = Servo ID 3 ✓
     //   Finger 2 = Index/Pointer = Servo ID 4 ✓ (inverted: 180=open, 0=closed)
     //   Finger 3 = Middle = Servo ID 2 ✓
     //   Finger 4 (rightmost) = Ring = Servo ID 1 ✓
     let mut finger_map = std::collections::HashMap::new();
-    finger_map.insert("1".to_string(), (3, false));  // Leftmost = Pinky = Servo ID 3 (normal) ✓
-    finger_map.insert("2".to_string(), (4, true));   // Index/Pointer = Servo ID 4 (inverted) ✓
-    finger_map.insert("3".to_string(), (2, false));  // Middle = Servo ID 2 (normal) ✓
-    finger_map.insert("4".to_string(), (1, false));  // Rightmost = Ring = Servo ID 1 (normal) ✓
+    finger_map.insert("1".to_string(), (3, false)); // Leftmost = Pinky = Servo ID 3 (normal) ✓
+    finger_map.insert("2".to_string(), (4, true)); // Index/Pointer = Servo ID 4 (inverted) ✓
+    finger_map.insert("3".to_string(), (2, false)); // Middle = Servo ID 2 (normal) ✓
+    finger_map.insert("4".to_string(), (1, false)); // Rightmost = Ring = Servo ID 1 (normal) ✓
     finger_map.insert("left".to_string(), (3, false));
     finger_map.insert("pinky".to_string(), (3, false));
     finger_map.insert("index".to_string(), (4, true));
@@ -46,28 +49,28 @@ fn main() -> Result<()> {
     finger_map.insert("middle".to_string(), (2, false));
     finger_map.insert("ring".to_string(), (1, false));
     finger_map.insert("right".to_string(), (1, false));
-    
+
     // If no command provided, enter interactive mode
     if args.len() < 3 {
         println!("Interactive mode - port stays open (no resets between commands)");
         println!("Type 'q' to quit\n");
-        
+
         loop {
             print!("> ");
             io::stdout().flush()?;
             let mut input = String::new();
             io::stdin().read_line(&mut input)?;
             let cmd = input.trim().to_lowercase();
-            
+
             if cmd == "q" || cmd == "quit" {
                 break;
             }
-            
+
             let parts: Vec<&str> = cmd.split_whitespace().collect();
             if parts.is_empty() {
                 continue;
             }
-            
+
             match parts[0] {
                 "open" => {
                     for (finger_name, &(servo_id, inverted)) in &finger_map {
@@ -107,8 +110,10 @@ fn main() -> Result<()> {
                         if let Ok(angle) = parts[1].parse::<f32>() {
                             let final_angle = if inverted { 180.0 - angle } else { angle };
                             controller.send_servo_command(servo_id, finger_name, final_angle)?;
-                            println!("✓ Finger {} (servo {}) moved to {}° (sent: {}°)", 
-                                     finger_name, servo_id, angle, final_angle);
+                            println!(
+                                "✓ Finger {} (servo {}) moved to {}° (sent: {}°)",
+                                finger_name, servo_id, angle, final_angle
+                            );
                         } else {
                             println!("Invalid angle: {}", parts[1]);
                         }
@@ -120,7 +125,7 @@ fn main() -> Result<()> {
         }
         return Ok(());
     }
-    
+
     // Single command mode
     let cmd = args[2].to_lowercase();
     println!("Connected to: {}", port);
@@ -168,8 +173,10 @@ fn main() -> Result<()> {
                 if let Ok(angle) = args[3].parse::<f32>() {
                     let final_angle = if inverted { 180.0 - angle } else { angle };
                     controller.send_servo_command(servo_id, finger_name, final_angle)?;
-                    println!("✓ Finger {} (servo {}) moved to {}° (sent: {}°)", 
-                             finger_name, servo_id, angle, final_angle);
+                    println!(
+                        "✓ Finger {} (servo {}) moved to {}° (sent: {}°)",
+                        finger_name, servo_id, angle, final_angle
+                    );
                 } else {
                     eprintln!("Error: Invalid angle: {}", args[3]);
                     std::process::exit(1);

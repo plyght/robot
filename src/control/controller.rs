@@ -12,8 +12,8 @@ pub struct HandController {
 impl HandController {
     pub fn new(config: HandConfig) -> Result<Self> {
         let controller = Self::create_controller(&config)?;
-        let fingers = Self::create_fingers(&config, &controller)?;
-        let wrist = Self::create_wrist(&config, &controller)?;
+        let fingers = Self::create_fingers(&config, controller.as_ref())?;
+        let wrist = Self::create_wrist(&config, controller.as_ref())?;
         let hand = Hand::new(fingers, wrist);
 
         Ok(Self { hand, config })
@@ -63,7 +63,7 @@ impl HandController {
     }
 
     pub fn grasp(&mut self, object_size: f32) -> Result<()> {
-        let close_amount = (100.0 - object_size).max(0.0).min(90.0);
+        let close_amount = (100.0 - object_size).clamp(0.0, 90.0);
 
         for i in 0..self.hand.finger_count() {
             let finger = self
@@ -116,7 +116,7 @@ impl HandController {
 
     fn create_motor(
         joint_config: &JointConfig,
-        _controller: &Box<dyn MotorController>,
+        _controller: &dyn MotorController,
     ) -> Result<Box<dyn Motor>> {
         match joint_config.motor_type {
             MotorType::PwmServo => {
@@ -146,7 +146,7 @@ impl HandController {
 
     fn create_fingers(
         config: &HandConfig,
-        controller: &Box<dyn MotorController>,
+        controller: &dyn MotorController,
     ) -> Result<Vec<Finger>> {
         let mut fingers = Vec::new();
 
@@ -165,7 +165,7 @@ impl HandController {
         Ok(fingers)
     }
 
-    fn create_wrist(config: &HandConfig, controller: &Box<dyn MotorController>) -> Result<Wrist> {
+    fn create_wrist(config: &HandConfig, controller: &dyn MotorController) -> Result<Wrist> {
         let pitch_motor = config
             .wrist
             .pitch

@@ -1,6 +1,6 @@
-pub mod finger;
-pub mod hand;
-pub mod wrist;
+mod finger;
+mod hand;
+mod wrist;
 
 pub use finger::{Finger, Joint};
 pub use hand::Hand;

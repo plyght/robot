@@ -11,14 +11,24 @@ pub mod vision;
 pub use config::{
     CommunicationConfig, FingerConfig, HandConfig, JointConfig, MotorType, Protocol, WristConfig,
 };
-pub use control::{HandController, MotionPlanner, PickupSequence, SequenceStep, Trajectory, TrajectoryPoint, VisionController, VisionControllerConfig, create_default_finger_servo_map};
+pub use control::{
+    create_default_finger_servo_map, HandController, MotionPlanner, PickupSequence, SequenceStep,
+    Trajectory, TrajectoryPoint, VisionController, VisionControllerConfig,
+};
 pub use emg::{EmgReader, EmgState, MockEmgReader};
 pub use error::{HandError, Result};
 pub use hand::{Finger, Hand, Joint, Wrist};
 pub use hardware::{DcMotor, I2cController, Motor, MotorController, PwmServo, StepperMotor};
 pub use platform::{I2cPlatformController, LinuxPwmController, MockController};
-pub use protocol::{ServoProtocol, TextSerialController, MockSerialController};
-pub use vision::{DetectedObject, BoundingBox, GripPattern, GripPatternType, MockObjectDetector, ObjectDetector, classify_object_type, select_best_object};
+pub use protocol::{MockSerialController, ServoProtocol, TextSerialController};
+pub use vision::{
+    classify_object_type, cleanup_temp_files, create_tracking_data, ensure_temp_dir,
+    select_best_object, BoundingBox, DepthProService, DetectedObject, GripPattern, GripPatternType,
+    MockObjectDetector, ObjectDepth, ObjectDetector, ObjectTrackingData,
+};
+
+#[cfg(feature = "opencv")]
+pub use vision::{create_tracking_with_image, ObjectTrackingWithImage};
 
 #[cfg(feature = "opencv")]
 pub use vision::OpenCVDetector;

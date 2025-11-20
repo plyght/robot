@@ -13,9 +13,10 @@ serialport = { version = "4.3", optional = true }
 embedded-hal = { version = "1.0", optional = true }
 linux-embedded-hal = { version = "0.4", optional = true }
 rppal = { version = "0.18", optional = true }
-opencv = { version = "0.97", optional = true, default-features = false, features = ["videoio", "highgui", "imgproc"] }
+opencv = { version = "0.97", optional = true, default-features = false, features = ["videoio", "highgui", "imgproc", "imgcodecs"] }
 ort = { version = "2.0.0-rc.10", optional = true }
 ndarray = { version = "0.16", optional = true }
+serde_json = "1.0"
 
 [features]
 default = ["mock"]
@@ -37,5 +38,17 @@ path = "src/bin/simple_control.rs"
 [[bin]]
 name = "camera_test"
 path = "src/bin/camera_test.rs"
+
+[[bin]]
+name = "tracking_output_test"
+path = "src/bin/tracking_output_test.rs"
+
+[[bin]]
+name = "collect_training_data"
+path = "src/bin/collect_training_data.rs"
+
+[[bin]]
+name = "depth_integration_test"
+path = "src/bin/depth_integration_test.rs"
 
 [dev-dependencies]

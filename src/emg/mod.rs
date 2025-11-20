@@ -60,7 +60,10 @@ impl serialport::SerialPort for MockSerialPort {
         Ok(())
     }
 
-    fn set_flow_control(&mut self, _flow_control: serialport::FlowControl) -> serialport::Result<()> {
+    fn set_flow_control(
+        &mut self,
+        _flow_control: serialport::FlowControl,
+    ) -> serialport::Result<()> {
         Ok(())
     }
 
@@ -222,10 +225,7 @@ impl EmgReader {
             }
             Ok(_) => Ok(None),
             Err(ref e) if e.kind() == std::io::ErrorKind::TimedOut => Ok(None),
-            Err(e) => Err(HandError::Communication(format!(
-                "EMG read error: {}",
-                e
-            ))),
+            Err(e) => Err(HandError::Communication(format!("EMG read error: {}", e))),
         }
     }
 
@@ -298,4 +298,3 @@ impl MockEmgReader {
         self.current_value
     }
 }
-
