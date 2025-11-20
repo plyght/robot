@@ -11,11 +11,19 @@ training_data/
 checkpoints/
 temp/
 venv_depth_pro/
+venv_depth_pro_system/
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
 .Python
+
+# Test output files
+test_image.jpg
+*.jpg
+*.png
+!models/*.jpg
+!models/*.png
 
 # Keep essential models in repo
 !models/*.onnx
