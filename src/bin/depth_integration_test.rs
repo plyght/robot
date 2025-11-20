@@ -1,7 +1,14 @@
 #[cfg(feature = "opencv")]
-fn main() -> Result<()> {
-    use opencv::{core, highgui, imgcodecs, imgproc};
-    use robot_hand::{DepthProService, OpenCVDetector};
+fn main() -> robot_hand::Result<()> {
+    use std::env;
+    use std::path::PathBuf;
+    use std::sync::{Arc, Mutex};
+    use std::sync::mpsc::{channel, Receiver, Sender};
+    use std::thread;
+    use std::time::Instant;
+    
+    use opencv::{core, highgui, imgproc};
+    use robot_hand::{DepthProService, ObjectDetector, OpenCVDetector};
 
     let args: Vec<String> = env::args().collect();
 
@@ -43,11 +50,25 @@ fn main() -> Result<()> {
     detector.load_yolo_model("models/yolov8n.onnx")?;
     println!("✓ YOLO loaded");
 
-    println!("\nStarting Depth Pro service...");
-    println!("(This may take 10-20 seconds to load the model...)");
-    let python_path = "venv_depth_pro/bin/python3";
-    let mut depth_service = DepthProService::new(Some(python_path))?;
-    println!("✓ Depth Pro ready!");
+    // In stream mode, depth service is created in worker thread
+    // In manual mode, create it here
+    let python_path = if std::path::Path::new("venv_depth_pro_system/bin/python3").exists() {
+        "venv_depth_pro_system/bin/python3"
+    } else {
+        "venv_depth_pro/bin/python3"
+    };
+    
+    let mut depth_service = if !stream_mode {
+        println!("\nStarting Depth Pro service...");
+        println!("(This may take 2-5 minutes to load the model...)");
+        println!("(Model will stay loaded in memory once ready)");
+        let service = DepthProService::new(Some(python_path))?;
+        println!("✓ Depth Pro ready! (Model loaded and staying in memory)");
+        Some(service)
+    } else {
+        println!("\nDepth Pro service will start in background worker thread...");
+        None
+    };
 
     if stream_mode {
         println!("\n⚡ STREAM MODE: Continuous depth updates");
@@ -85,13 +106,15 @@ fn main() -> Result<()> {
         let computing_arc = Arc::clone(&depth_computing);
         let time_arc = Arc::clone(&last_depth_time);
 
+        let python_path_clone = python_path.to_string();
         thread::spawn(move || {
             println!("[Depth Worker] Starting continuous depth stream...");
+            println!("[Depth Worker] Loading model (this may take 2-5 minutes)...");
 
             let mut depth_service =
-                match robot_hand::DepthProService::new(Some("venv_depth_pro/bin/python3")) {
+                match robot_hand::DepthProService::new(Some(&python_path_clone)) {
                     Ok(s) => {
-                        println!("[Depth Worker] Service ready!");
+                        println!("[Depth Worker] Service ready! (Model loaded and staying in memory)");
                         s
                     }
                     Err(e) => {
@@ -218,23 +241,28 @@ fn main() -> Result<()> {
         };
 
         let status = if stream_mode {
-            if is_computing {
+            if objects.is_empty() {
                 format!(
-                    "FPS: {:.1} | Objects: {} | ⚡ Computing...{}",
+                    "FPS: {:.1} | No objects detected | Waiting for objects...",
+                    fps
+                )
+            } else if is_computing {
+                format!(
+                    "FPS: {:.1} | Objects: {} | ⚡ Computing depth...{}",
                     fps,
                     objects.len(),
                     depth_hz
                 )
             } else if cached_depth_count > 0 {
                 format!(
-                    "FPS: {:.1} | Objects: {} | ⚡ Stream active{}",
+                    "FPS: {:.1} | Objects: {} | ⚡ Depth ready{}",
                     fps,
                     objects.len(),
                     depth_hz
                 )
             } else {
                 format!(
-                    "FPS: {:.1} | Objects: {} | ⚡ Waiting for objects...",
+                    "FPS: {:.1} | Objects: {} | ⚡ Queued for depth processing...",
                     fps,
                     objects.len()
                 )
@@ -304,40 +332,49 @@ fn main() -> Result<()> {
                 continue;
             }
 
-            *depth_computing.lock().unwrap() = true;
-            let temp_path = format!("temp/depth_frame_{}.jpg", frame_count);
-            let frame_clone = frame.clone();
-            let objects_clone = objects.clone();
+            if let Some(ref mut depth_svc) = depth_service {
+                *depth_computing.lock().unwrap() = true;
+                let temp_path = format!("temp/depth_frame_{}.jpg", frame_count);
+                let frame_clone = frame.clone();
+                let objects_clone = objects.clone();
 
-            let depths_arc = Arc::clone(&cached_depths);
-            let objects_arc = Arc::clone(&cached_objects);
-            let computing_arc = Arc::clone(&depth_computing);
-            let temp_path_clone = temp_path.clone();
+                let depths_arc = Arc::clone(&cached_depths);
+                let objects_arc = Arc::clone(&cached_objects);
+                let computing_arc = Arc::clone(&depth_computing);
+                let temp_path_clone = temp_path.clone();
 
-            thread::spawn(move || {
-                let depth_start = Instant::now();
+                thread::spawn(move || {
+                    let depth_start = Instant::now();
 
-                if let Err(e) = opencv::imgcodecs::imwrite(
-                    &temp_path_clone,
-                    &frame_clone,
-                    &opencv::core::Vector::new(),
-                ) {
-                    eprintln!("Failed to save frame: {}", e);
-                    *computing_arc.lock().unwrap() = false;
-                    return;
-                }
+                    if let Err(e) = opencv::imgcodecs::imwrite(
+                        &temp_path_clone,
+                        &frame_clone,
+                        &opencv::core::Vector::new(),
+                    ) {
+                        eprintln!("Failed to save frame: {}", e);
+                        *computing_arc.lock().unwrap() = false;
+                        return;
+                    }
 
-                let mut temp_depth_service =
-                    match robot_hand::DepthProService::new(Some("venv_depth_pro/bin/python3")) {
-                        Ok(s) => s,
-                        Err(e) => {
-                            eprintln!("Failed to create depth service: {}", e);
-                            *computing_arc.lock().unwrap() = false;
-                            return;
-                        }
+                    // Reuse the depth service from main thread
+                    // Note: This requires sharing, but for now we'll create a new one
+                    // TODO: Share depth_service via Arc<Mutex<>> for better efficiency
+                    let python_path = if std::path::Path::new("venv_depth_pro_system/bin/python3").exists() {
+                        "venv_depth_pro_system/bin/python3"
+                    } else {
+                        "venv_depth_pro/bin/python3"
                     };
+                    let mut temp_depth_service =
+                        match robot_hand::DepthProService::new(Some(python_path)) {
+                            Ok(s) => s,
+                            Err(e) => {
+                                eprintln!("Failed to create depth service: {}", e);
+                                *computing_arc.lock().unwrap() = false;
+                                return;
+                            }
+                        };
 
-                match temp_depth_service.process_image(&temp_path_clone, &objects_clone) {
+                    match temp_depth_service.process_image(&temp_path_clone, &objects_clone) {
                     Ok(depths) => {
                         let depth_time = depth_start.elapsed().as_millis();
 

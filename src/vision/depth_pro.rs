@@ -1,7 +1,7 @@
 use crate::{DetectedObject, HandError, Result};
 use serde::{Deserialize, Serialize};
 use std::io::{BufRead, BufReader, Write};
-use std::process::{Child, ChildStdin, ChildStdout, Command, Stdio};
+use std::process::{Child, ChildStdin, ChildStdout, ChildStderr, Command, Stdio};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DepthProRequest {
@@ -32,6 +32,7 @@ pub struct DepthProService {
     process: Child,
     stdin: ChildStdin,
     stdout: BufReader<ChildStdout>,
+    _stderr: Option<ChildStderr>,
 }
 
 impl DepthProService {
@@ -42,7 +43,7 @@ impl DepthProService {
             .arg("depth_service.py")
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
-            .stderr(Stdio::inherit())
+            .stderr(Stdio::piped())
             .spawn()
             .map_err(|e| HandError::Hardware(format!("Failed to start depth service: {}", e)))?;
 
@@ -56,19 +57,51 @@ impl DepthProService {
             .take()
             .ok_or_else(|| HandError::Hardware("Failed to open stdout".to_string()))?;
 
+        let stderr = process.stderr.take();
+
         let mut service = DepthProService {
             process,
             stdin,
             stdout: BufReader::new(stdout),
+            _stderr: stderr,
         };
 
         service.wait_ready()?;
+        
+        service._stderr = None;
 
         Ok(service)
     }
 
     fn wait_ready(&mut self) -> Result<()> {
-        std::thread::sleep(std::time::Duration::from_secs(2));
+        if let Some(stderr) = self._stderr.take() {
+            let mut stderr_reader = BufReader::new(stderr);
+            let mut line = String::new();
+            let timeout = std::time::Instant::now() + std::time::Duration::from_secs(300);
+            
+            while std::time::Instant::now() < timeout {
+                line.clear();
+                match stderr_reader.read_line(&mut line) {
+                    Ok(0) => {
+                        std::thread::sleep(std::time::Duration::from_millis(100));
+                        continue;
+                    }
+                    Ok(_) => {
+                        eprint!("{}", line);
+                        if line.contains("Depth Pro ready!") {
+                            return Ok(());
+                        }
+                    }
+                    Err(_) => {
+                        std::thread::sleep(std::time::Duration::from_millis(100));
+                        continue;
+                    }
+                }
+            }
+            return Err(HandError::Hardware("Timeout waiting for depth service to be ready (5 minutes)".to_string()));
+        }
+        
+        std::thread::sleep(std::time::Duration::from_secs(10));
         Ok(())
     }
 

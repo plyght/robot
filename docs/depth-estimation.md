@@ -2,18 +2,18 @@
 
 ## Overview
 
-This system integrates Apple Depth Pro for accurate metric depth estimation, providing actual distances in centimeters for autonomous robotic control.
+This system integrates Apple Depth Pro (Core ML) for accurate metric depth estimation, providing actual distances in centimeters for autonomous robotic control. The Core ML implementation leverages Apple's Neural Engine for optimized performance on Apple Silicon.
 
 ## Architecture
 
 ```
-Camera -> YOLO Detection -> Depth Pro -> Distance Estimation -> Robot Control
+Camera -> YOLO Detection -> Core ML Depth Pro -> Distance Estimation -> Robot Control
 ```
 
 The pipeline:
 1. Camera captures frame
 2. YOLO detects objects with bounding boxes
-3. Depth Pro analyzes full image to generate depth map
+3. Core ML Depth Pro analyzes full image to generate depth map (using Neural Engine)
 4. Extract depth values at object bounding box locations
 5. Calculate median depth for each object
 6. Feed distances to control system
@@ -22,9 +22,10 @@ The pipeline:
 
 ### Prerequisites
 
-- Python 3.12 or later
+- **Python 3.9-3.11** (recommended for best Core ML compatibility)
 - Rust with cargo
 - OpenCV (for camera capture)
+- macOS with Apple Silicon (M1/M2/M3) for Neural Engine acceleration
 
 ### Setup Script
 
@@ -32,14 +33,38 @@ The pipeline:
 ./setup_depth_pro.sh
 ```
 
-This creates a Python virtual environment, installs Apple's depth_pro package, and downloads the pretrained model (approximately 1.5GB).
+This script will:
+1. Create a Python virtual environment (using system Python 3.9 if available)
+2. Install Core ML tools (`coremltools`, `pillow`, `numpy`, `scipy`)
+3. Download the Core ML Depth Pro model from Hugging Face to `~/coreml-depthpro/` (~710MB weights file)
+
+**Note**: 
+- The model download may take several minutes (~710MB weights file)
+- The model will be stored in your home directory at `~/coreml-depthpro/DepthProNormalizedInverseDepthPruned10QuantizedLinear.mlpackage/`
+- This directory is **not** in the repository (it's in your home folder), so each user must download it
+- The `depth_service.py` script automatically finds the model at this location
 
 ### Verify Installation
 
 ```bash
 source venv_depth_pro/bin/activate
-python3 depth_service.py test data/example.jpg
+python3 depth_service.py test <path_to_image.jpg>
 ```
+
+Or test with a bounding box:
+```bash
+python3 depth_service.py test <image.jpg> 100 100 200 150
+```
+
+### Important: Gitignored Files
+
+The following directories are gitignored and must be set up locally:
+- `venv_depth_pro/` - Python virtual environment (created by setup script)
+- `venv_depth_pro_system/` - Alternative Python environment (if created)
+- `temp/` - Temporary image files for processing
+- `test_image.jpg`, `*.jpg`, `*.png` - Test output images
+
+These will be created automatically when you run the setup script and use the system.
 
 ## Usage
 
@@ -69,6 +94,8 @@ let mut detector = OpenCVDetector::new(0, 0.55)?;
 detector.load_yolo_model("models/yolov8n.onnx")?;
 
 let mut depth_service = DepthProService::new(Some("venv_depth_pro/bin/python3"))?;
+// Note: The setup script creates venv_depth_pro. If you created venv_depth_pro_system instead,
+// use: DepthProService::new(Some("venv_depth_pro_system/bin/python3"))?
 
 fs::create_dir_all("temp")?;
 
@@ -114,6 +141,8 @@ Custom capture interval:
 
 ```rust
 let mut depth_service = DepthProService::new(Some("venv_depth_pro/bin/python3"))?;
+// The service loads the Core ML model once at startup (takes ~10-20s)
+// After that, process_image() calls are fast and consistent (~6.7s each)
 
 let depths: Vec<ObjectDepth> = depth_service.process_image(
     "path/to/image.jpg",
@@ -137,9 +166,12 @@ pub struct ObjectDepth {
 
 ## Performance
 
-- Depth Pro inference: 300-500ms per frame (GPU) or 1-2s (CPU)
-- YOLO detection: 140ms per frame
-- Total pipeline: approximately 500ms per frame
+- **Model loading**: ~10-20 seconds (one-time cost when service starts)
+- **Depth Pro inference**: ~6-7 seconds per frame (Core ML with Neural Engine)
+- **YOLO detection**: ~140ms per frame
+- **Total pipeline**: ~6-7 seconds per frame (depth is the bottleneck)
+
+**Note**: After the initial model load, successive image processing is consistent and fast (~6.7s per image). The model uses Apple's Neural Engine for acceleration on M1/M2/M3 Macs.
 
 ### Stream Mode
 
@@ -152,9 +184,10 @@ Stream mode provides continuous depth updates for robot control:
 Features:
 - Non-blocking operation
 - UI runs at full camera FPS (approximately 7 FPS)
-- Depth updates at approximately 2 Hz
+- Depth updates at ~0.15 Hz (one update per ~6.7 seconds)
 - Background processing prevents UI freezing
 - Always-fresh cached depth data
+- Model loads once at startup, then processes images efficiently
 
 ## Accuracy
 
@@ -229,37 +262,60 @@ To prevent temporary image files from accumulating on your system:
 
 ## Troubleshooting
 
-### Module not found: depth_pro
+### Module not found: coremltools
 
 ```bash
 source venv_depth_pro/bin/activate
-pip install git+https://github.com/apple/ml-depth-pro.git
+pip install coremltools pillow numpy scipy
 ```
+
+### Model not found error
+
+The model should be at `~/coreml-depthpro/DepthProNormalizedInverseDepthPruned10QuantizedLinear.mlpackage/`.
+
+If missing, download manually:
+```bash
+pip install huggingface_hub
+python3 -c "
+from huggingface_hub import snapshot_download
+import os
+snapshot_download(
+    repo_id='KeighBee/coreml-DepthPro',
+    local_dir=os.path.expanduser('~/coreml-depthpro'),
+    allow_patterns='DepthProNormalizedInverseDepthPruned10QuantizedLinear.mlpackage/**'
+)
+"
+```
+
+Or visit: https://huggingface.co/KeighBee/coreml-DepthPro/tree/main
 
 ### Service fails to start
 
-Verify Python path:
+Verify Python path and version:
 
 ```bash
 which python3
+python3 --version  # Should be 3.9-3.11 for best compatibility
 ```
 
-Use the correct path in DepthProService::new().
-
-### Model download fails
-
-Manual download:
-
-```bash
-cd checkpoints
-curl -L -o depth_pro.pt "https://ml-site.cdn-apple.com/models/depth-pro/depth_pro.pt"
+If using a different Python version, update the path in `DepthProService::new()`:
+```rust
+let mut depth_service = DepthProService::new(Some("/path/to/python3"))?;
 ```
+
+### Core ML native libraries not loading
+
+This usually happens with Python 3.12+. The setup script will try to use system Python 3.9 if available. Alternatively:
+
+1. Use system Python: `/usr/bin/python3` (usually Python 3.9)
+2. Or install Python 3.9-3.11 via Homebrew and use that
 
 ### Slow inference
 
-- Use GPU acceleration if available (CUDA or Apple Silicon MPS)
-- Reduce camera resolution
-- Process every Nth frame instead of every frame
+- Ensure you're on Apple Silicon (M1/M2/M3) for Neural Engine acceleration
+- The ~6-7 second inference time is expected for this model size (1536x1536 input)
+- Process every Nth frame instead of every frame for real-time applications
+- Consider using stream mode with background processing (see Stream Mode section)
 
 ## Alternative Approaches
 
