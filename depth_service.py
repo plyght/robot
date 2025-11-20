@@ -17,6 +17,12 @@ except ImportError:
     print(json.dumps({"error": "coremltools not installed. Run: pip install coremltools"}))
     sys.exit(1)
 
+try:
+    from scipy import ndimage
+    HAS_SCIPY = True
+except ImportError:
+    HAS_SCIPY = False
+
 
 class DepthService:
     def __init__(self, model_path=None):
@@ -42,7 +48,10 @@ class DepthService:
         print("Depth Pro ready!", file=sys.stderr)
     
     def _preprocess_image(self, image_path):
-        """Load and preprocess image for Core ML model."""
+        """Load and preprocess image for Core ML model.
+        
+        Optimized for fast successive calls - minimal allocations.
+        """
         image = Image.open(image_path).convert("RGB")
         original_size = image.size
         
@@ -107,32 +116,36 @@ class DepthService:
         if isinstance(depth_output, np.ndarray):
             depth_map_raw = depth_output
         else:
-            depth_map_raw = np.array(depth_output)
+            depth_map_raw = np.asarray(depth_output)
         
-        if len(depth_map_raw.shape) == 4:
-            depth_map_raw = depth_map_raw[0]
-        if len(depth_map_raw.shape) == 3:
+        while len(depth_map_raw.shape) > 2:
             if depth_map_raw.shape[0] == 1:
                 depth_map_raw = depth_map_raw[0]
+            elif len(depth_map_raw.shape) == 3:
+                depth_map_raw = depth_map_raw.squeeze()
             else:
-                depth_map_raw = depth_map_raw.mean(axis=0)
+                depth_map_raw = depth_map_raw[0]
         
         original_width, original_height = original_size
         
         if depth_map_raw.shape[:2] != (original_height, original_width):
-            from PIL import Image as PILImage
-            depth_min = depth_map_raw.min()
-            depth_max = depth_map_raw.max()
-            depth_range = depth_max - depth_min if depth_max > depth_min else 1.0
-            
-            depth_normalized = (depth_map_raw - depth_min) / depth_range
-            depth_uint16 = (depth_normalized * 65535).astype(np.uint16)
-            
-            depth_pil = PILImage.fromarray(depth_uint16)
-            depth_pil = depth_pil.resize((original_width, original_height), PILImage.Resampling.LANCZOS)
-            depth_resized = np.array(depth_pil).astype(np.float32) / 65535.0
-            
-            depth_map_raw = depth_resized * depth_range + depth_min
+            if HAS_SCIPY:
+                scale_y = original_height / depth_map_raw.shape[0]
+                scale_x = original_width / depth_map_raw.shape[1]
+                depth_map_raw = ndimage.zoom(depth_map_raw, (scale_y, scale_x), order=1, prefilter=False)
+            else:
+                depth_min = depth_map_raw.min()
+                depth_max = depth_map_raw.max()
+                depth_range = depth_max - depth_min if depth_max > depth_min else 1.0
+                
+                depth_normalized = (depth_map_raw - depth_min) / depth_range
+                depth_uint16 = (depth_normalized * 65535).astype(np.uint16)
+                
+                depth_pil = Image.fromarray(depth_uint16)
+                depth_pil = depth_pil.resize((original_width, original_height), Image.Resampling.LANCZOS)
+                depth_resized = np.array(depth_pil).astype(np.float32) / 65535.0
+                
+                depth_map_raw = depth_resized * depth_range + depth_min
         
         depth_map = self._convert_normalized_inverse_depth_to_meters(
             depth_map_raw, original_width, original_height
