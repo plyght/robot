@@ -1,10 +1,14 @@
 pub mod cleanup;
 pub mod depth_pro;
 pub mod grip_patterns;
+pub mod hand_tracker;
 
 pub use cleanup::{cleanup_temp_files, ensure_temp_dir};
 pub use depth_pro::{DepthProService, ObjectDepth};
 pub use grip_patterns::{GripPattern, GripPatternType};
+
+#[cfg(feature = "opencv")]
+pub use hand_tracker::HandTracker;
 
 use crate::error::Result;
 
@@ -61,6 +65,12 @@ impl BoundingBox {
 pub trait ObjectDetector {
     fn detect_objects(&mut self) -> Result<Vec<DetectedObject>>;
     fn get_frame_size(&self) -> (i32, i32);
+    
+    #[cfg(feature = "opencv")]
+    fn save_current_frame(&mut self, path: &str) -> Result<()> {
+        let _ = path;
+        Err(crate::error::HandError::Hardware("Frame saving not implemented for this detector".to_string()))
+    }
 }
 
 pub struct MockObjectDetector {
@@ -448,6 +458,14 @@ impl ObjectDetector for OpenCVDetector {
 
     fn get_frame_size(&self) -> (i32, i32) {
         (self.frame_width, self.frame_height)
+    }
+
+    fn save_current_frame(&mut self, path: &str) -> Result<()> {
+        use crate::error::HandError;
+        let frame = self.get_frame()?;
+        opencv::imgcodecs::imwrite(path, &frame, &opencv::core::Vector::default())
+            .map_err(|e| HandError::Hardware(format!("Failed to save frame: {}", e)))?;
+        Ok(())
     }
 }
 

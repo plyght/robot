@@ -1,24 +1,49 @@
-# Robot Hand Control Library
+# Robot Hand Control System
 
-Universal Rust library for controlling robotic hands with flexible hardware abstraction, supporting multiple motor types, communication protocols, and autonomous vision-based manipulation.
+**Complete LLM-driven robot hand control with computer vision, depth estimation, hand tracking, and inverse kinematics.**
 
 ## Features
 
-- Hardware-agnostic trait-based architecture
-- PWM servos, stepper motors, and DC motor support
-- Serial, I2C, and PWM communication protocols
-- TOML-based configuration system
-- Computer vision integration with YOLO object detection
-- Apple Depth Pro integration for metric depth estimation
-- EMG sensor integration for muscle-controlled operation
-- Mock hardware support for cross-platform development
+### Vision & Perception
+- **YOLO Object Detection** - Real-time object detection with YOLOv8
+- **Depth Estimation** - Apple Depth Pro integration for metric depth
+- **Hand Tracking** - MediaPipe-based hand pose estimation (optional)
+- **Camera Integration** - OpenCV VideoCapture support
+
+### Intelligence & Planning
+- **LLM Planning** - OpenAI GPT integration for adaptive movement generation
+- **Inverse Kinematics** - Automatic target position → joint angle solving
+- **Forward Kinematics** - Real-time hand position tracking
+- **Scene Analysis** - Multi-object awareness and obstacle avoidance
+
+### Hardware Control
+- **Unified Servo Mapping** - Hardware abstraction with automatic angle translation
+- **Inverted Servo Support** - Handles reversed servo orientations
+- **Serial Protocol** - USB serial communication (115200 baud)
+- **Mock Mode** - Test without hardware
+
+### System Architecture
+- **Async Runtime** - Tokio-based async execution
+- **Modular Design** - Clean separation of vision, planning, kinematics, and control
+- **Configurable** - Command-line options and environment variables
 
 ## Quick Start
 
+### Test Vision Pipeline (No Hardware)
+
 ```bash
-cargo test
-cargo run --example basic_control
+cargo run --features opencv --release -- --auto --mock
 ```
+
+### Run with Real Robot
+
+```bash
+cargo run --features opencv,serial --release -- \
+  --port /dev/cu.usbmodem1101 \
+  --auto
+```
+
+**See [SETUP.md](SETUP.md) for complete installation and usage guide.**
 
 ## Installation
 

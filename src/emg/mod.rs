@@ -191,6 +191,10 @@ impl EmgReader {
         self.threshold = threshold;
     }
 
+    pub fn threshold(&self) -> u16 {
+        self.threshold
+    }
+
     pub fn set_debounce_duration(&mut self, duration: Duration) {
         self.debounce_duration = duration;
     }

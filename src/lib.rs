@@ -4,6 +4,7 @@ pub mod emg;
 pub mod error;
 pub mod hand;
 pub mod hardware;
+pub mod kinematics;
 pub mod platform;
 pub mod protocol;
 pub mod vision;
@@ -18,7 +19,8 @@ pub use control::{
 pub use emg::{EmgReader, EmgState, MockEmgReader};
 pub use error::{HandError, Result};
 pub use hand::{Finger, Hand, Joint, Wrist};
-pub use hardware::{DcMotor, I2cController, Motor, MotorController, PwmServo, StepperMotor};
+pub use hardware::{DcMotor, Finger as HardwareFinger, I2cController, Motor, MotorController, PwmServo, ServoConfig, ServoMap, StepperMotor};
+pub use kinematics::{ForwardKinematics, HandGeometry, InverseKinematics, JointAngles, Position3D};
 pub use platform::{I2cPlatformController, LinuxPwmController, MockController};
 pub use protocol::{MockSerialController, ServoProtocol, TextSerialController};
 pub use vision::{

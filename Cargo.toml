@@ -2,6 +2,7 @@
 name = "robot-hand"
 version = "0.1.0"
 edition = "2021"
+default-run = "robot"
 
 [dependencies]
 serde = { version = "1.0", features = ["derive"] }
@@ -17,6 +18,9 @@ opencv = { version = "0.97", optional = true, default-features = false, features
 ort = { version = "2.0.0-rc.10", optional = true }
 ndarray = { version = "0.16", optional = true }
 serde_json = "1.0"
+async-openai = "0.24"
+tokio = { version = "1", features = ["full"] }
+reqwest = { version = "0.12", features = ["json"] }
 
 [features]
 default = ["mock"]
@@ -28,27 +32,17 @@ raspberry-pi = ["dep:rppal", "linux-pwm"]
 opencv = ["dep:opencv", "dep:ort", "dep:ndarray"]
 
 [[bin]]
-name = "vision_control"
-path = "src/bin/vision_control.rs"
+name = "robot"
+path = "src/main.rs"
 
 [[bin]]
 name = "simple_control"
 path = "src/bin/simple_control.rs"
+required-features = ["serial"]
 
 [[bin]]
-name = "camera_test"
-path = "src/bin/camera_test.rs"
-
-[[bin]]
-name = "tracking_output_test"
-path = "src/bin/tracking_output_test.rs"
-
-[[bin]]
-name = "collect_training_data"
-path = "src/bin/collect_training_data.rs"
-
-[[bin]]
-name = "depth_integration_test"
-path = "src/bin/depth_integration_test.rs"
+name = "test_serial"
+path = "src/bin/test_serial.rs"
+required-features = ["serial"]
 
 [dev-dependencies]
